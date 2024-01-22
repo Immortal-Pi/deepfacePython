@@ -1,16 +1,48 @@
-# This is a sample Python script.
+import threading
 
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+import cv2
+from deepface import DeepFace
+def check_face(frame):
+    global face_match
+    try:
+        if DeepFace.verify(frame, reference_img.copy())['verified']:
+            face_match=True
+        else:
+            face_match=False
+    except ValueError:
+        face_match=False
 
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
-
-
-# Press the green button in the gutter to run the script.
 if __name__ == '__main__':
-    print_hi('PyCharm')
+    camera = cv2.VideoCapture(0,cv2.CAP_DSHOW)
 
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/
+    camera.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+    camera.set(cv2.CAP_PROP_FRAME_HEIGHT,480)
+
+    counter = 0
+
+    face_match=False
+
+    reference_img=cv2.imread("reference/16313.jpg")
+
+    while True:
+        ret, frame = camera.read()
+        if ret:
+            if counter%30 ==0:
+                try:
+                    threading.Thread(target=check_face, args=(frame.copy(),)).start()
+                except ValueError:
+                    pass
+        counter+=1
+
+        if face_match:
+            cv2.putText(frame,"MATCH!",(20,450),cv2.FONT_HERSHEY_SIMPLEX,2,(0,255,0),3)
+        else:
+            cv2.putText(frame,"NO MATCH",(20,450),cv2.FONT_HERSHEY_SIMPLEX,2,(0,0,255),3)
+        cv2.imshow("FACE",frame)
+
+
+        key=cv2.waitKey(1)
+        if key==ord("q"):
+            break
+    cv2.destroyAllWindows()
